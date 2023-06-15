@@ -897,12 +897,23 @@ func validateOVNKubernetes(conf *operv1.NetworkSpec) []error {
 }
 
 func getOVNEncapOverhead(conf *operv1.NetworkSpec) uint32 {
-	const geneveOverhead = 100
+	const geneveOverhead = 58
 	const ipsecOverhead = 46 // Transport mode, AES-GCM
 	var encapOverhead uint32 = geneveOverhead
 	if conf.DefaultNetwork.OVNKubernetesConfig.IPsecConfig != nil {
 		encapOverhead += ipsecOverhead
 	}
+	var cnHasIPv6 bool
+	for _, cn := range conf.ClusterNetwork {
+		if utilnet.IsIPv6CIDRString(cn.CIDR) {
+			cnHasIPv6 = true
+		}
+	}
+	const ipv6Overhead = 20
+	if cnHasIPv6 {
+		encapOverhead += ipv6Overhead
+	}
+
 	return encapOverhead
 }
 
